@@ -97,3 +97,91 @@ monitorsystem/
 └── frontend/                      # Thư mục chứa mã nguồn Giao diện (Nginx)
     └── index.html                 # Trang web hiển thị số realtime và nhúng Grafana
 ```
+### docker-compose.yml
+
+```
+ version: '3.8'
+
+services:
+  nodered:
+    image: nodered/node-red:latest
+    container_name: nodered_app
+    ports:
+      - "1880:1880"
+    volumes:
+      - nodered_data:/data
+    networks:
+      - monitor_net
+    depends_on:
+      - mariadb
+      - influxdb
+
+  mariadb:
+    image: mariadb:latest
+    container_name: mariadb_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: realtime_db
+    ports:
+      - "3306:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    networks:
+      - monitor_net
+
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb_db
+    environment:
+      INFLUXDB_DB: history_db
+    ports:
+      - "8086:8086"
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+    networks:
+      - monitor_net
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana_app
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ALLOW_EMBEDDING=true
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - monitor_net
+
+  flask-api:
+    build: ./flask-api
+    container_name: flask_api
+    ports:
+      - "5000:5000"
+    networks:
+      - monitor_net
+    depends_on:
+      - mariadb
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx_server
+    ports:
+      - "80:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html
+    networks:
+      - monitor_net
+
+volumes:
+  nodered_data:
+  mariadb_data:
+  influxdb_data:
+  grafana_data:
+
+networks:
+  monitor_net:
+    driver: bridge
+```
+
