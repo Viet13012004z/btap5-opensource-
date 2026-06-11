@@ -184,4 +184,83 @@ networks:
   monitor_net:
     driver: bridge
 ```
+### Các node sử dụng trong nodered
 
+
+<img width="1571" height="566" alt="image" src="https://github.com/user-attachments/assets/234df371-cf28-4011-9a80-378f6033d84f" />
+
+
+Giải thích các Node trong luồng dữ liệu (Data Pipeline)
+
+Luồng dữ liệu của hệ thống được xây dựng dựa trên các Node chức năng chính sau đây:
+
+| Tên Node | Chức năng chính | Vai trò trong hệ thống |
+| :--- | :--- | :--- |
+| **`timestamp`** | Inject / Trigger | Kích hoạt chu kỳ thu thập dữ liệu tự động (mỗi 5 giây). |
+| **`http request`** | Data Acquisition | Gửi yêu cầu GET tới API nguồn để lấy dữ liệu giá vàng/Bitcoin thô. |
+| **`function 1`** | Logic Processor | Xử lý dữ liệu JSON, phân tách thông tin và định dạng thành lệnh SQL. |
+| **`realtime_db`** | Database Output | Lưu trữ giá trị tức thời vào bảng `gold_market` trong MariaDB. |
+| **`influxdb`** | Time-series Output | Ghi dữ liệu theo mốc thời gian để phục vụ vẽ biểu đồ lịch sử. |
+| **`function 2`** | Smart Filter | Sử dụng Regex để bốc tách giá trị từ SQL và lọc bỏ các phản hồi hệ thống {ok: true}. |
+| **`http request`** | Notification | Gửi tin nhắn cảnh báo tường minh tới nhóm Telegram (3 thành viên). |
+
+#### Mô tả luồng đi (Flow Path):
+1. **Khởi tạo:** `timestamp` kích hoạt hệ thống.
+2. **Thu thập:** `http request` lấy dữ liệu thô.
+3. **Xử lý:** `function 1` chuyển đổi dữ liệu thành cấu trúc lưu trữ.
+4. **Lưu trữ:** Dữ liệu được đẩy song song vào `MariaDB` (hiện tại) và `InfluxDB` (lịch sử).
+5. **Cảnh báo:** `function 2` lọc dữ liệu biến động và `http request` cuối cùng thực hiện gửi thông báo đến người dùng.
+
+### Kết nối grafana với MariaDb
+
+- truy cập đường dẫn : http://192.168.11.104:3000/?orgId=1&from=now-6h&to=now&timezone=browser sau đó đăng nhập vào tk garafana mà đã cấu hình ở docker-compose.yml
+
+<img width="1918" height="971" alt="image" src="https://github.com/user-attachments/assets/46d260d5-7422-4270-b81f-b9e9d0dfec06" />
+
+### sau khi kết nối thành công với mariadb
+
+<img width="1918" height="1078" alt="image" src="https://github.com/user-attachments/assets/1ca75738-82fb-4d50-9ac4-ba9c9c0012b4" />
+
+### Tạo dashboard và biểu đồ 
+
+<img width="1918" height="1078" alt="image" src="https://github.com/user-attachments/assets/182cb0cb-624b-4d2f-96be-9724671ac4f3" />
+
+<img width="1712" height="793" alt="image" src="https://github.com/user-attachments/assets/54a17b8a-05b5-4e68-addd-cca69e73209e" />
+
+### Share đường link truy cập dashboard sau đó cập nhật vào iframe ở html
+
+- Lấy ở đây: 
+
+<img width="920" height="653" alt="image" src="https://github.com/user-attachments/assets/6bfd8fa2-5b7d-4eab-a5ca-59d348bf4c28" />
+
+- Thay vào index.html
+
+<img width="1496" height="546" alt="image" src="https://github.com/user-attachments/assets/06b4d0e0-148b-4b37-9e13-433ad3d069f9" />
+
+### Truy cập vào đường dẫn http://192.168.11.104/ sẽ hiển thị ra trang html 
+
+<img width="1905" height="1013" alt="image" src="https://github.com/user-attachments/assets/ebba8998-d3e8-42b5-a68b-66e994fb8e78" />
+
+### Tạo bot tele cảnh báo 
+
+<img width="862" height="567" alt="image" src="https://github.com/user-attachments/assets/0d1cbda3-5489-4dad-9ea4-eefe97b727d6" />
+
+- Sau đó tạo 1 nhóm mới add thêm 2 người trong đó có bot tele cảnh báo
+
+<img width="473" height="807" alt="image" src="https://github.com/user-attachments/assets/5e8cce58-f8c0-4565-809f-cb05a8767575" />
+
+coppy token truy cập để xem nhận dc api chưa sau đó lấy id nhóm chat thay vào function 
+
+<img width="1882" height="777" alt="image" src="https://github.com/user-attachments/assets/47380c45-56d9-4095-9ab8-5378bd6e6469" />
+
+### Test
+
+<img width="1402" height="628" alt="image" src="https://github.com/user-attachments/assets/9a0cf6ac-6a81-4189-aa82-a1130169f302" />
+
+- Đã thành công nhận được cảnh báo từ bot tele
+
+### Đóng gói backup
+
+<img width="1350" height="712" alt="image" src="https://github.com/user-attachments/assets/255de4fc-c758-42b2-a97c-12bfa81f50b8" />
+
+- sau đó đơn giản là dùng lệnh huyền thoại docker-compose up-d lên là chạy dc lại các container thôi 
